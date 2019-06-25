@@ -37,9 +37,6 @@ class BiLSTMCrf(object):
             lstm_bw_cell = tf.nn.rnn_cell.DropoutWrapper(
                 cell=tf.nn.rnn_cell.BasicLSTMCell(num_units=self.hiddenSize),
                 output_keep_prob=self.dropout_keep_prob)
-            # keras.layers.Bidirectional(
-            #     keras.layers.LSTM(units=self.hiddenSize, dropout=1 - self.dropout_keep_prob)).apply(
-            #     inputs=self.embeddingInput, mask=)
             bidOutput, bidCurrent_state = tf.nn.bidirectional_dynamic_rnn(cell_fw=lstm_fw_cell,
                                                                           cell_bw=lstm_bw_cell,
                                                                           sequence_length=self.sentenceLengths,
@@ -96,11 +93,11 @@ class BiLSTMCrf(object):
             metrics = {
                 'acc': tf.metrics.accuracy(labels=self.inputY, predictions=self.sequence, weights=weights),
                 'precision': precision(labels=self.inputY, predictions=self.sequence, num_classes=self.numClasses,
-                                       pos_indices=[1, 3, 4, 6, 7, 8], weights=weights),
+                                       pos_indices=[0, 2, 3, 5, 6, 7], weights=weights),
                 'recall': recall(labels=self.inputY, predictions=self.sequence, num_classes=self.numClasses,
-                                 pos_indices=[1, 3, 4, 6, 7, 8], weights=weights),
+                                 pos_indices=[0, 2, 3, 5, 6, 7], weights=weights),
                 'f1': f1(labels=self.inputY, predictions=self.sequence, num_classes=self.numClasses,
-                         pos_indices=[1, 3, 4, 6, 7, 8], weights=weights)
+                         pos_indices=[0, 2, 3, 5, 6, 7], weights=weights)
             }
             if mode == tf.estimator.ModeKeys.TRAIN:
                 for metric_name, op in metrics.items():
