@@ -38,7 +38,7 @@ class DataGenerator:
             sentences = keras.preprocessing.sequence.pad_sequences(sentences, self.__maxLength, padding='post',
                                                                    value=[self.__vocab2index['<PAD>']])
             tags = keras.preprocessing.sequence.pad_sequences(tags, self.__maxLength, padding='post',
-                                                              value=self.__taged2index['O'])
+                                                              value=self.__taged2index['<PAD>'])
         return sentences, tags, np.asarray(sentenceLengths)
 
     def input_fn(self, inputFile, batchSize, epochNum=1, ifShuffleAndRepeat=True):
@@ -56,4 +56,13 @@ class DataGenerator:
     def indexToText(self, sentence, tag):
         sentence = list(map(lambda x: self.__index2vocab[x], sentence))
         tag = list(map(lambda x: self.__index2taged[x], tag))
-        return sentence, tag
+        per, loc, org = '', '', ''
+
+        for s, t in zip(sentence, tag):
+            if t in ('B-PER', 'I-PER'):
+                per += ' ' + s if (t == 'B-PER') else s
+            if t in ('B-ORG', 'I-ORG'):
+                org += ' ' + s if (t == 'B-ORG') else s
+            if t in ('B-LOC', 'I-LOC'):
+                loc += ' ' + s if (t == 'B-LOC') else s
+        return ['Person:' + per, 'Location:' + loc, 'Organzation:' + org]

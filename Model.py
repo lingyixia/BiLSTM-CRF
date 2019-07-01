@@ -93,11 +93,11 @@ class BiLSTMCrf(object):
             metrics = {
                 'acc': tf.metrics.accuracy(labels=self.inputY, predictions=self.sequence, weights=weights),
                 'precision': precision(labels=self.inputY, predictions=self.sequence, num_classes=self.numClasses,
-                                       pos_indices=[0, 2, 3, 5, 6, 7], weights=weights),
+                                       pos_indices=[0, 1, 2, 4, 6, 7], weights=weights),
                 'recall': recall(labels=self.inputY, predictions=self.sequence, num_classes=self.numClasses,
-                                 pos_indices=[0, 2, 3, 5, 6, 7], weights=weights),
+                                 pos_indices=[0, 1, 2, 4, 6, 7], weights=weights),
                 'f1': f1(labels=self.inputY, predictions=self.sequence, num_classes=self.numClasses,
-                         pos_indices=[0, 2, 3, 5, 6, 7], weights=weights)
+                         pos_indices=[0, 1, 2, 4, 6, 7], weights=weights)
             }
             if mode == tf.estimator.ModeKeys.TRAIN:
                 for metric_name, op in metrics.items():

@@ -51,16 +51,16 @@ if __name__ == '__main__':
     with Path(FLAGS.modelPath).joinpath('params').open('w') as writer:
         json.dump(vars(FLAGS), writer)
     model = tf.estimator.Estimator(model_fn=model_fn, params=params, model_dir=FLAGS.modelPath, config=cfg)
-    train_inputFun = functools.partial(dataGenerator.input_fn, os.path.join(FLAGS.dataDir, 'train.txt'),
-                                       batchSize=FLAGS.batchSize, epochNum=FLAGS.epochNum)
-    eval_inputFun = functools.partial(dataGenerator.input_fn, os.path.join(FLAGS.dataDir, 'dev.txt'),
-                                      batchSize=FLAGS.batchSize, ifShuffleAndRepeat=False)
-    train_spec = tf.estimator.TrainSpec(input_fn=train_inputFun)
-    eval_spec = tf.estimator.EvalSpec(input_fn=eval_inputFun, throttle_secs=120)
+    # train_inputFun = functools.partial(dataGenerator.input_fn, os.path.join(FLAGS.dataDir, 'train.txt'),
+    #                                    batchSize=FLAGS.batchSize, epochNum=FLAGS.epochNum)
+    # eval_inputFun = functools.partial(dataGenerator.input_fn, os.path.join(FLAGS.dataDir, 'dev.txt'),
+    #                                   batchSize=FLAGS.batchSize, ifShuffleAndRepeat=False)
+    # train_spec = tf.estimator.TrainSpec(input_fn=train_inputFun)
+    # eval_spec = tf.estimator.EvalSpec(input_fn=eval_inputFun, throttle_secs=120)
     test_inputFun = functools.partial(dataGenerator.input_fn, os.path.join(FLAGS.dataDir, 'test.txt'),
                                       batchSize=FLAGS.batchSize,
                                       ifShuffleAndRepeat=False)
     predictions = model.predict(test_inputFun)
     for result in predictions:
-        sentence, tags = dataGenerator.indexToText(result['sentence'], result['tags'])
-        print(dict(zip(sentence, tags)))
+        result = dataGenerator.indexToText(result['sentence'], result['tags'])
+        print(result)
