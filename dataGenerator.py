@@ -21,10 +21,10 @@ class DataGenerator:
             for line in reader:
                 line = line.replace('\n', '')
                 if line == '':
-                    sentence = [self.__vocab2index['<START>']] + sentence
-                    tag = [self.__taged2index['<START>']] + tag
-                    sentence.append(self.__vocab2index['<END>'])
-                    tag.append(self.__taged2index['<END>'])
+                    # sentence = [self.__vocab2index['<START>']] + sentence
+                    # tag = [self.__taged2index['<START>']] + tag
+                    # sentence.append(self.__vocab2index['<END>'])
+                    # tag.append(self.__taged2index['<END>'])
                     sentenceLengths.append(len(sentence))
                     sentences.append(sentence.copy())
                     tags.append(tag.copy())
