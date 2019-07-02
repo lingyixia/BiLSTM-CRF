@@ -56,6 +56,8 @@ class DataGenerator:
     def indexToText(self, sentence, tag):
         sentence = list(map(lambda x: self.__index2vocab[x], sentence))
         tag = list(map(lambda x: self.__index2taged[x], tag))
+        print(''.join(sentence))
+        print(''.join(tag))
         per, loc, org = '', '', ''
 
         for s, t in zip(sentence, tag):
