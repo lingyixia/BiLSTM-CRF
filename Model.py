@@ -104,8 +104,12 @@ class BiLSTMCrf(object):
                     tf.summary.scalar(metric_name, op[1])
                 learnRate = tf.train.exponential_decay(self.learnRate, tf.train.get_global_step(), 500, 0.98,
                                                        staircase=True)
-                optimizer = tf.train.AdamOptimizer(learnRate)
-                self.train_op = optimizer.minimize(self.loss, global_step=tf.train.get_global_step())
+#                 optimizer = tf.train.AdamOptimizer(learnRate)
+#                 self.train_op = optimizer.minimize(self.loss, global_step=tf.train.get_global_step())
+                grads_and_vars = optimizer.compute_gradients(self.loss)
+                grads_and_vars_clip = [(tf.clip_by_value(grad, -5., 5.), var) for grad, var in grads_and_vars if
+                                       grad is not None]
+                self.train_op = optimizer.apply_gradients(grads_and_vars_clip, global_step=tf.train.get_global_step())
                 return self.loss, self.train_op
             else:
                 return self.loss, metrics
