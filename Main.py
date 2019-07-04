@@ -15,7 +15,7 @@ parser.add_argument('--learnRate', type=float, default=0.005, help='学习率设
 parser.add_argument("--dropout", type=float, default=0.5, help='dropout keep prob')
 parser.add_argument("--dataDir", type=str, default='data', help='数据路径')
 parser.add_argument("--batchSize", type=int, default=32, help='batchSize')
-parser.add_argument("--epochNum", type=int, default=100, help='batchSize')
+parser.add_argument("--epochNum", type=int, default=100, help='epoch数量')
 parser.add_argument("--crf", type=bool, default=True, help='是否使用crf')
 parser.add_argument('--l2_reg_lambda', type=float, default=0.1, help='l2正则项系数')
 parser.add_argument('--modelPath', type=str, default='model', help='模型存放位置')
