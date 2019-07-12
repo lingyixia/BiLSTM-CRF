@@ -87,15 +87,17 @@ class DataHelper(object):
 
     def indexToText(self, sentence, sentenceLength, tag):
         sentence = list(map(lambda x: self.index2vocab[x], sentence[:sentenceLength]))
+        print(''.join(sentence))
         tag = list(map(lambda x: self.index2tag[x], tag[:sentenceLength]))
         per, loc, org = '', '', ''
 
+
         for s, t in zip(sentence, tag):
-            if t in ('B-PER', 'I-PER'):
+            if t in ('B-PER', 'I-PER','E-PER'):
                 per += ' ' + s if (t == 'B-PER') else s
-            if t in ('B-ORG', 'I-ORG'):
+            if t in ('B-ORG', 'I-ORG','E-ORG'):
                 org += ' ' + s if (t == 'B-ORG') else s
-            if t in ('B-LOC', 'I-LOC'):
+            if t in ('B-LOC', 'I-LOC','E-LOC'):
                 loc += ' ' + s if (t == 'B-LOC') else s
         return ['Person:' + per, 'Location:' + loc, 'Organzation:' + org]
 

@@ -1,9 +1,9 @@
 import tensorflow as tf
 import numpy as np
+from dataHelper import *
 from Model import *
 import os, functools, argparse, json
 from pathlib import Path
-from dataHelper import *
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -15,17 +15,19 @@ parser.add_argument('--learnRate', type=float, default=0.005, help='学习率设
 parser.add_argument("--dropout", type=float, default=0.5, help='dropout keep prob')
 parser.add_argument("--dataDir", type=str, default='data', help='数据路径')
 parser.add_argument("--batchSize", type=int, default=32, help='batchSize')
-parser.add_argument("--epochNum", type=int, default=100, help='epoch数量')
+parser.add_argument("--epochNum", type=int, default=100, help='batch数量')
 parser.add_argument("--crf", type=bool, default=True, help='是否使用crf')
 parser.add_argument('--l2_reg_lambda', type=float, default=0.1, help='l2正则项系数')
 parser.add_argument('--modelPath', type=str, default='model', help='模型存放位置')
+parser.add_argument('--encode_layer_size', type=bool, default=6, help='编码层bisltm层数')
 
 
 def model_fn(features, labels, mode, params):
     inputX, sentenceLengths = features
     model = BiLSTMCrf(inputX, labels, sentenceLengths, params['numClasses'], params['vocabSize'],
                       FLAGS.embeddingSize, FLAGS.hiddenSize, FLAGS.learnRate, FLAGS.maxLength, FLAGS.l2_reg_lambda,
-                      FLAGS.dropout if mode == tf.estimator.ModeKeys.TRAIN else 1.0, FLAGS.crf)
+                      FLAGS.dropout if mode == tf.estimator.ModeKeys.TRAIN else 1.0, FLAGS.crf,
+                      layer_size=params['encodeLayerSize'])
     if mode == tf.estimator.ModeKeys.TRAIN:
         loss, train_op, logits, sequence = model.getResult(mode)
         train_logging_hook = tf.train.LoggingTensorHook({"logits": logits, 'sequence': sequence}, every_n_iter=100)
@@ -41,14 +43,15 @@ def model_fn(features, labels, mode, params):
 
 if __name__ == '__main__':
     FLAGS = parser.parse_args()
-    np.set_printoptions(threshold=np.inf)
     cfg = tf.estimator.RunConfig(save_checkpoints_secs=120, keep_checkpoint_max=5)
+    # os.chdir("/content/drive/ColaboratoryLab/MyEL2019")
     dataHelper = DataHelper('./data/train.txt')
     if not Path(FLAGS.modelPath).exists():
         Path(FLAGS.modelPath).mkdir()
     with Path(FLAGS.modelPath).joinpath('params').open('w') as writer:
         json.dump(vars(FLAGS), writer)
-    params = {'numClasses': len(dataHelper.index2tag), 'vocabSize': len(dataHelper.index2vocab)}
+    params = {'numClasses': len(dataHelper.index2tag), 'vocabSize': len(dataHelper.index2vocab),
+              'encodeLayerSize': FLAGS.encode_layer_size}
     model = tf.estimator.Estimator(model_fn=model_fn, params=params, model_dir=FLAGS.modelPath, config=cfg)
     train_inputFun = functools.partial(dataHelper.input_fn, os.path.join(FLAGS.dataDir, 'train.txt'),
                                        batch_size=FLAGS.batchSize, epoch_num=FLAGS.epochNum)
@@ -63,3 +66,4 @@ if __name__ == '__main__':
     for result in predictions:
         result = dataHelper.indexToText(result['sentence'], result['sentenceLength'], result['tag'])
         print(result)
+        print()
