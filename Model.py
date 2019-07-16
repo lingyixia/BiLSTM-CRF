@@ -36,10 +36,12 @@ class BiLSTMCrf(object):
             bi_layer_size = self.__layer_size // 2
             lstm_fw_cell = tf.nn.rnn_cell.MultiRNNCell(
                 [tf.nn.rnn_cell.DropoutWrapper(cell=tf.nn.rnn_cell.BasicLSTMCell(num_units=self.__hidden_size),
-                                               output_keep_prob=self.__dropout_keep_prob) for _ in range(bi_layer_size)])
+                                               output_keep_prob=self.__dropout_keep_prob) for _ in
+                 range(bi_layer_size)])
             lstm_bw_cell = tf.nn.rnn_cell.MultiRNNCell(
                 [tf.nn.rnn_cell.DropoutWrapper(cell=tf.nn.rnn_cell.BasicLSTMCell(num_units=self.__hidden_size),
-                                               output_keep_prob=self.__dropout_keep_prob) for _ in range(bi_layer_size)])
+                                               output_keep_prob=self.__dropout_keep_prob) for _ in
+                 range(bi_layer_size)])
             bidOutput, bidCurrent_state = tf.nn.bidirectional_dynamic_rnn(cell_fw=lstm_fw_cell,
                                                                           cell_bw=lstm_bw_cell,
                                                                           sequence_length=self.__sentence_lengths,
@@ -112,7 +114,6 @@ class BiLSTMCrf(object):
                                                        0.98,
                                                        staircase=True)
                 optimizer = tf.train.AdamOptimizer(learnRate)
-                # self.train_op = optimizer.minimize(self.loss, global_step=tf.train.get_global_step())
                 grads_and_vars = optimizer.compute_gradients(self.loss)
                 grads_and_vars_clip = [(tf.clip_by_value(grad, -0.5, 0.5), var) for grad, var in grads_and_vars if
                                        grad is not None]

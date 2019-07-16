@@ -17,7 +17,7 @@ parser.add_argument("--dataDir", type=str, default='data', help='数据路径')
 parser.add_argument("--batchSize", type=int, default=32, help='batchSize')
 parser.add_argument("--epochNum", type=int, default=100, help='batch数量')
 parser.add_argument("--crf", type=bool, default=True, help='是否使用crf')
-parser.add_argument('--l2_reg_lambda', type=float, default=0.1, help='l2正则项系数')
+parser.add_argument('--l2_reg_lambda', type=float, default=0.001, help='l2正则项系数')
 parser.add_argument('--modelPath', type=str, default='model', help='模型存放位置')
 parser.add_argument('--encode_layer_size', type=bool, default=6, help='编码层bisltm层数')
 
