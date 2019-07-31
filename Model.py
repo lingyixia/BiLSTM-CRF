@@ -6,12 +6,12 @@ from tensorflow.contrib import keras
 
 class BiLSTMCrf(object):
     def __init__(self, inputX, inputY, sentenceLengths, numClasses, vocabSize, embeddingSize,
-                 hiddenSize, learnRate, maxLength, l2_reg_lambda, dropout_keep_prob, crf, layer_size):
+                 hiddenSize, base_learn_rate, maxLength, l2_reg_lambda, dropout_keep_prob, crf, layer_size, eval_tags):
         self.__num_classes = numClasses
         self.__vocab_size = vocabSize
         self.__embedding_size = embeddingSize
         self.__hidden_size = hiddenSize
-        self.__learn_rate = learnRate
+        self.__base_learn_rate = base_learn_rate
         self.__max_length = maxLength
         self.l2_reg_lambda = l2_reg_lambda
         self.__inputX = inputX
@@ -20,6 +20,7 @@ class BiLSTMCrf(object):
         self.__dropout_keep_prob = dropout_keep_prob
         self.__crf = crf
         self.__layer_size = layer_size
+        self.__eval_tags = eval_tags
         self.__addEmbeddingLayer()
         self.__addBiLSTMLayer()
 
@@ -52,16 +53,9 @@ class BiLSTMCrf(object):
 
     def __addBiLSTMOutPutDenseLayer(self, mode):
         with tf.name_scope('BiLSTMOutputDenseLayer'):
-            l2_regularizer = tf.contrib.layers.l2_regularizer(scale=self.l2_reg_lambda)  # 获取正则项
             self.bilstmDenseOutput = keras.layers.Dense(units=self.__num_classes,
-                                                        activation=keras.activations.relu,
-                                                        kernel_initializer=tf.contrib.layers.xavier_initializer(),
-                                                        kernel_regularizer=l2_regularizer)(self.BiLSTMOutput)
-            # self.bilstmDenseOutput = tf.layers.dense(inputs=self.BiLSTMOutput,
-            #                                          units=self.numClasses,
-            #                                          activation=tf.nn.relu,
-            #                                          kernel_initializer=tf.contrib.layers.xavier_initializer(),
-            #                                          kernel_regularizer=l2_regularizer)
+                                                        kernel_initializer=tf.contrib.layers.xavier_initializer())(
+                self.BiLSTMOutput)
             self.sequence = tf.argmax(self.bilstmDenseOutput, axis=-1)
             if mode in (tf.estimator.ModeKeys.TRAIN, tf.estimator.ModeKeys.EVAL):
                 losses = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.__inputY,
@@ -69,24 +63,17 @@ class BiLSTMCrf(object):
                 mask = tf.sequence_mask(self.__sentence_lengths)
                 losses = tf.boolean_mask(losses, mask)
                 self.loss = tf.reduce_mean(losses)
-                self.l2_loss = tf.losses.get_regularization_loss()  # 使用get_regularization_loss函数获取定义的全
-                self.loss += self.l2_reg_lambda * self.l2_loss
 
     def __addCrfLayer(self, mode):
         with tf.name_scope('CRFLayer'):
-            with tf.variable_scope('transitions', reuse=tf.AUTO_REUSE):
-                self.transitionParams = tf.get_variable("transitions", shape=[self.__num_classes, self.__num_classes],
-                                                        initializer=tf.contrib.layers.xavier_initializer())
+            logLikelihood, self.transitionParams = crf.crf_log_likelihood(self.bilstmDenseOutput,
+                                                                              self.__inputY,
+                                                                              self.__sentence_lengths)
             self.sequence, _ = crf.crf_decode(self.bilstmDenseOutput,
                                               self.transitionParams,
                                               self.__sentence_lengths)
-            self.logits = tf.where(tf.not_equal(self.sequence, 0))
             if mode in (tf.estimator.ModeKeys.TRAIN, tf.estimator.ModeKeys.EVAL):
-                logLikelihood, self.transitionParams = crf.crf_log_likelihood(self.bilstmDenseOutput,
-                                                                              self.__inputY,
-                                                                              self.__sentence_lengths)
                 self.loss = tf.reduce_mean(-logLikelihood)
-                self.loss += self.l2_reg_lambda
 
     def getResult(self, mode):
         self.__addBiLSTMOutPutDenseLayer(mode)
@@ -99,25 +86,25 @@ class BiLSTMCrf(object):
             metrics = {
                 'acc': tf.metrics.accuracy(labels=self.__inputY, predictions=self.sequence, weights=weights),
                 'precision': precision(labels=self.__inputY, predictions=self.sequence, num_classes=self.__num_classes,
-                                       pos_indices=[0, 1, 2, 4, 6, 7, 8, 9, 10], weights=weights),
+                                       pos_indices=self.__eval_tags, weights=weights),
                 'recall': recall(labels=self.__inputY, predictions=self.sequence, num_classes=self.__num_classes,
-                                 pos_indices=[0, 1, 2, 4, 6, 7, 8, 9, 10], weights=weights),
+                                 pos_indices=self.__eval_tags, weights=weights),
                 'f1': f1(labels=self.__inputY, predictions=self.sequence, num_classes=self.__num_classes,
-                         pos_indices=[0, 1, 2, 4, 6, 7, 8, 9, 10], weights=weights)
+                         pos_indices=self.__eval_tags, weights=weights)
             }
             if mode == tf.estimator.ModeKeys.TRAIN:
                 for metric_name, op in metrics.items():
                     tf.summary.scalar(metric_name, op[1])
-                learnRate = tf.train.exponential_decay(self.__learn_rate,
-                                                       tf.train.get_global_step(),
-                                                       500,
-                                                       0.98,
-                                                       staircase=True)
-                optimizer = tf.train.AdamOptimizer(learnRate)
+                learn_rate = tf.train.exponential_decay(self.__base_learn_rate,
+                                                        tf.train.get_global_step(),
+                                                        500,
+                                                        0.98,
+                                                        staircase=True)
+                optimizer = tf.train.AdamOptimizer(learn_rate)
                 grads_and_vars = optimizer.compute_gradients(self.loss)
-                grads_and_vars_clip = [(tf.clip_by_value(grad, -0.5, 0.5), var) for grad, var in grads_and_vars if
+                grads_and_vars_clip = [(tf.clip_by_value(grad, -3, 3), var) for grad, var in grads_and_vars if
                                        grad is not None]
                 self.train_op = optimizer.apply_gradients(grads_and_vars_clip, global_step=tf.train.get_global_step())
-                return self.loss, self.train_op, self.logits, self.sequence
+                return self.loss, self.train_op, learn_rate
             else:
-                return self.loss, metrics
+                return self.loss, metrics, self.sequence

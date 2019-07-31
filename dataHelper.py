@@ -8,13 +8,11 @@
 # @DateTime:     2019-07-04 10:05
 # @Contact       chenfeiyu01@baidu.com
 # @Version       1.0
-# @Description:  
+# @Description:
 # -------------------------------------------------------------------------------
 import functools, pickle
 import tensorflow as tf
 from pathlib import Path
-
-tf.enable_eager_execution()
 
 
 class DataHelper(object):
@@ -65,7 +63,7 @@ class DataHelper(object):
             item = item.split('/')
             sentence.append(self.vocab2index.get(item[0], self.vocab2index['<UNK>']))
             tag.append(self.tag2index[item[1]])
-        return (sentence, len(sentence)), tag
+        return (sentence, len(sentence), tag), 0
 
     def __generator_fn(self, train_file):
         with Path(train_file).open('r') as reader:
@@ -73,13 +71,12 @@ class DataHelper(object):
                 yield self.__parse_fn(line)
 
     def input_fn(self, train_file, epoch_num=1, batch_size=32, is_shuffle_and_repeat=True):
-        shapes = (([None], ()), [None])
-        types = ((tf.int32, tf.int32), tf.int32)
-        defaults = ((self.vocab2index['<PAD>'], 0), self.tag2index['<PAD>'])
-        dataset = tf.data.Dataset.from_generator(
-            functools.partial(self.__generator_fn, train_file),
-            output_shapes=shapes,
-            output_types=types)
+        shapes = (([None], (), [None]), ())
+        types = ((tf.int32, tf.int32, tf.int32), tf.int32)
+        defaults = ((self.vocab2index['<PAD>'], 0, self.tag2index['<PAD>']), 0)
+        dataset = tf.data.Dataset.from_generator(functools.partial(self.__generator_fn, train_file),
+                                                 output_shapes=shapes,
+                                                 output_types=types)
         if is_shuffle_and_repeat:
             dataset = dataset.shuffle(1000).repeat(epoch_num)
         dataset = (dataset.padded_batch(batch_size, shapes, defaults).prefetch(1))
@@ -89,18 +86,17 @@ class DataHelper(object):
         sentence = list(map(lambda x: self.index2vocab[x], sentence[:sentenceLength]))
         print(''.join(sentence))
         tag = list(map(lambda x: self.index2tag[x], tag[:sentenceLength]))
+        print(tag)
         per, loc, org = '', '', ''
 
-
         for s, t in zip(sentence, tag):
-            if t in ('B-PER', 'I-PER','E-PER'):
+            if t in ('B-PER', 'I-PER'):
                 per += ' ' + s if (t == 'B-PER') else s
-            if t in ('B-ORG', 'I-ORG','E-ORG'):
+            if t in ('B-ORG', 'I-ORG'):
                 org += ' ' + s if (t == 'B-ORG') else s
-            if t in ('B-LOC', 'I-LOC','E-LOC'):
+            if t in ('B-LOC', 'I-LOC'):
                 loc += ' ' + s if (t == 'B-LOC') else s
         return ['Person:' + per, 'Location:' + loc, 'Organzation:' + org]
-
 
 # if __name__ == '__main__':
 #     helper = DataHelper('data/train.txt')
