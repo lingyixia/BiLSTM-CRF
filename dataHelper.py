@@ -82,21 +82,24 @@ class DataHelper(object):
         dataset = (dataset.padded_batch(batch_size, shapes, defaults).prefetch(1))
         return dataset
 
-    def indexToText(self, sentence, sentenceLength, tag):
+    def indexToText(self, sentence, sentenceLength, tag,labels):
         sentence = list(map(lambda x: self.index2vocab[x], sentence[:sentenceLength]))
         print(''.join(sentence))
         tag = list(map(lambda x: self.index2tag[x], tag[:sentenceLength]))
-        print(tag)
-        per, loc, org = '', '', ''
+        labels = list(map(lambda x: self.index2tag[x], labels[:sentenceLength]))
+        return tag
+#         print(tag)
+#         print(labels)
+#         per, loc, org = '', '', ''
 
-        for s, t in zip(sentence, tag):
-            if t in ('B-PER', 'I-PER'):
-                per += ' ' + s if (t == 'B-PER') else s
-            if t in ('B-ORG', 'I-ORG'):
-                org += ' ' + s if (t == 'B-ORG') else s
-            if t in ('B-LOC', 'I-LOC'):
-                loc += ' ' + s if (t == 'B-LOC') else s
-        return ['Person:' + per, 'Location:' + loc, 'Organzation:' + org]
+#         for s, t in zip(sentence, tag):
+#             if t in ('B-PER', 'I-PER'):
+#                 per += ' ' + s if (t == 'B-PER') else s
+#             if t in ('B-ORG', 'I-ORG'):
+#                 org += ' ' + s if (t == 'B-ORG') else s
+#             if t in ('B-LOC', 'I-LOC'):
+#                 loc += ' ' + s if (t == 'B-LOC') else s
+#         return ['Person:' + per, 'Location:' + loc, 'Organzation:' + org]
 
 # if __name__ == '__main__':
 #     helper = DataHelper('data/train.txt')
